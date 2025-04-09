@@ -1,0 +1,2 @@
+/Users/apple/Documents/flutter-learning-apps/sample_app/android/app/.cxx/Debug/3v6q3qux/armeabi-v7a/CMakeFiles/rebuild_cache.dir
+/Users/apple/Documents/flutter-learning-apps/sample_app/android/app/.cxx/Debug/3v6q3qux/armeabi-v7a/CMakeFiles/edit_cache.dir
