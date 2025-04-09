@@ -9,15 +9,18 @@ void main() {
   runApp(const MyApp());
 }
 
-// fetch movies
-Future<Movie> fetchMovieData(
+Future<Movie> fetchMovieDatatest(
     String movieName, String? year, String? imdbID) async {
-  final queryType = imdbID != null ? '&i=$imdbID' : '&t=$movieName';
-  final yearQuery = year != null ? '&y=$year' : '';
+  String url = "https://omdbapi.com/?apikey=e56c123e";
+
+  url += '&t=$movieName';
+
+  if (year != null) url += '&y=$year';
+  if (imdbID != null) url += '&i=$imdbID';
+
   try {
     final response = await http.get(
-      Uri.parse(
-          'https://www.omdbapi.com/?$queryType$yearQuery&apikey=e56c123e'),
+      Uri.parse(url),
     );
 
     final movieInfo = (jsonDecode(response.body) as Map<String, dynamic>);
@@ -26,6 +29,29 @@ Future<Movie> fetchMovieData(
   } on Exception catch (e) {
     print('Exception details:\n $e');
     throw const FormatException('Expected at least 1 section');
+  }
+}
+
+// fetch movies
+Future<Movie> fetchMovieData(
+    String movieName, String? year, String? imdbID) async {
+  final queryType = imdbID != null ? '&i=$imdbID' : '&t=$movieName';
+  final yearQuery = year != null ? '&y=$year' : '';
+  try {
+    final response = await http.get(
+      Uri.parse('https://omdbapi.com/?$queryType$yearQuery&apikey=e56c123e'),
+    );
+
+    if (response.statusCode != 200) {
+      throw const FormatException('Please provide valid input');
+    }
+
+    final movieInfo = (jsonDecode(response.body) as Map<String, dynamic>);
+
+    return Movie.fromJson(movieInfo);
+  } on Exception catch (e) {
+    print('Exception details:\n $e');
+    throw FormatException(e.toString());
   }
 }
 
@@ -71,27 +97,38 @@ class MovieUI extends StatefulWidget {
 class MovieUIState extends State<MovieUI> {
   late Future<Movie> movieObj;
   final _formKey = GlobalKey<FormState>();
-  final _SearchController = TextEditingController();
+  final _searchController = TextEditingController();
   final _yearController = TextEditingController();
   final _imdbIDController = TextEditingController();
+  String errorMessage = '';
 
-  late final movieName, year, imdbID;
+  String? movieName, imdbID, year;
 
   @override
   void dispose() {
-    _SearchController.dispose();
+    _searchController.dispose();
     _imdbIDController.dispose();
     _yearController.dispose();
     super.dispose();
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      movieName = _SearchController.text;
-      year = _yearController.text;
-      imdbID = _imdbIDController.text;
+      movieName = _searchController.text;
+      year =
+          _yearController.text.trim().isNotEmpty ? _yearController.text : null;
+      imdbID = _imdbIDController.text.trim().isNotEmpty
+          ? _imdbIDController.text
+          : null;
 
+        fetchMovieData(movieName!, year, imdbID);
+      
+        setState(() {
+          errorMessage = e.toString();
+        });
+      }
       _formKey.currentState?.reset();
+      return;
     }
   }
 
@@ -108,7 +145,7 @@ class MovieUIState extends State<MovieUI> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextFormField(
-                    controller: _SearchController,
+                    controller: _searchController,
                     decoration: const InputDecoration(
                       labelText: 'Search Movie ',
                       border: OutlineInputBorder(),
@@ -156,7 +193,8 @@ class MovieUIState extends State<MovieUI> {
                       _submitForm();
                     },
                     child: const Text('Search'),
-                  )
+                  ),
+                  Text(errorMessage)
                 ],
               ),
             ),

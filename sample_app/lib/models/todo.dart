@@ -44,6 +44,7 @@ class Movie {
   const Movie({required this.imdbID, required this.title, required this.year});
 
   factory Movie.fromJson(Map<String, dynamic> json) {
+    print(json);
     if (json.containsKey("imdbID") &&
         json.containsKey("Title") &&
         json.containsKey("Year")) {
