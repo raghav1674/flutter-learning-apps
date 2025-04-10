@@ -40,18 +40,29 @@ class Movie {
   final String imdbID;
   final String title;
   final int year;
+  final String poster;
+  final String plot;
 
-  const Movie({required this.imdbID, required this.title, required this.year});
+  const Movie({
+    required this.imdbID,
+    required this.title,
+    required this.year,
+    required this.poster,
+    required this.plot,
+  });
 
   factory Movie.fromJson(Map<String, dynamic> json) {
-    print(json);
     if (json.containsKey("imdbID") &&
         json.containsKey("Title") &&
-        json.containsKey("Year")) {
+        json.containsKey("Year") &&
+        json.containsKey("Poster") &&
+        json.containsKey("Plot")) {
       return Movie(
           imdbID: json["imdbID"] as String,
           title: json["Title"] as String,
-          year: int.parse(json["Year"]));
+          year: int.parse(json["Year"]),
+          poster: json["Poster"],
+          plot: json["Plot"]);
     } else {
       throw const FormatException("Failed to load Movie");
     }

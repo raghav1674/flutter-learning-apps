@@ -76,8 +76,10 @@ class MyApp extends StatelessWidget {
                     BorderSide(color: Color.fromARGB(255, 236, 226, 213)),
               ),
             ),
-            textTheme:
-                const TextTheme(bodyLarge: TextStyle(color: Colors.white))),
+            textTheme: ThemeData.light().textTheme.apply(
+                  bodyColor: Colors.white,
+                  displayColor: Colors.white,
+                )),
         home: Scaffold(
             appBar: AppBar(title: const Text('Movie Database')),
             backgroundColor: const Color.fromARGB(255, 0, 7, 10),
@@ -95,7 +97,7 @@ class MovieUI extends StatefulWidget {
 }
 
 class MovieUIState extends State<MovieUI> {
-  late Future<Movie> movieObj;
+  late Future<Movie>? movieObj;
   final _formKey = GlobalKey<FormState>();
   final _searchController = TextEditingController();
   final _yearController = TextEditingController();
@@ -105,6 +107,12 @@ class MovieUIState extends State<MovieUI> {
   String? movieName, imdbID, year;
 
   @override
+  void initState() {
+    super.initState();
+    movieObj = null;
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _imdbIDController.dispose();
@@ -112,24 +120,26 @@ class MovieUIState extends State<MovieUI> {
     super.dispose();
   }
 
-  void _submitForm() async {
+  void _submitForm() {
     if (_formKey.currentState!.validate()) {
       movieName = _searchController.text;
-      year =
-          _yearController.text.trim().isNotEmpty ? _yearController.text : null;
-      imdbID = _imdbIDController.text.trim().isNotEmpty
-          ? _imdbIDController.text
-          : null;
 
-        fetchMovieData(movieName!, year, imdbID);
-      
-        setState(() {
-          errorMessage = e.toString();
-        });
+      if (_yearController.text.trim().isNotEmpty) {
+        year = _yearController.text;
       }
+      if (_imdbIDController.text.trim().isNotEmpty) {
+        imdbID = _imdbIDController.text;
+      }
+
+      setState(() {
+        movieObj = fetchMovieData(movieName!, year, imdbID);
+        print(movieObj);
+      });
+
       _formKey.currentState?.reset();
-      return;
     }
+
+    return;
   }
 
   @override
@@ -198,7 +208,61 @@ class MovieUIState extends State<MovieUI> {
                 ],
               ),
             ),
-            //FutureBuilder(future: fetchMovieData(), builder: builder)
+            FutureBuilder(
+                future: movieObj,
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.waiting:
+                      return Text("WAITING");
+                    default:
+                      if (snapshot.hasError) {
+                        return Text("ERROR");
+                      } else if (snapshot.hasData) {
+                        final M = snapshot.data! as Movie;
+
+                        return Card(
+                            child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(13),
+                                  bottom: Radius.circular(13)),
+                              child: Image.network(
+                                M.poster,
+                                //fit: BoxFit.cover,
+                                width: 100.0,
+                              ),
+                            ),
+                            ListTile(
+                              title: Text("${M.title}"),
+                              subtitle: Text("${M.plot}"),
+                            ),
+                          ],
+                        ));
+                      } else {
+                        return Text("NO DATA YET");
+                      }
+                  }
+                  // if (snapshot.hasError) {
+                  //   return const Text(
+                  //     "SOME ERROR OCCURED",
+                  //     style:
+                  //         TextStyle(color: Color.fromARGB(255, 238, 238, 238)),
+                  //   );
+                  // } else if (snapshot.hasData) {
+                  //   return const Text(
+                  //     "DATA RECEIVED",
+                  //     style:
+                  //         TextStyle(color: Color.fromARGB(255, 238, 238, 238)),
+                  //   );
+                  // } else {
+                  //   return const Text(
+                  //     "WAITING",
+                  //     style:
+                  //         TextStyle(color: Color.fromARGB(255, 246, 246, 250)),
+                  //   );
+                  // }
+                })
           ],
         ));
   }
