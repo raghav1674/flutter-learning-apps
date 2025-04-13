@@ -26,17 +26,17 @@ Future<Movie> fetchMovieDatatest(
     final movieInfo = (jsonDecode(response.body) as Map<String, dynamic>);
 
     return Movie.fromJson(movieInfo);
-  } on Exception catch (e) {
-    print('Exception details:\n $e');
+  } on Exception {
     throw const FormatException('Expected at least 1 section');
   }
 }
 
 // fetch movies
 Future<Movie> fetchMovieData(
-    String movieName, String? year, String? imdbID) async {
-  final queryType = imdbID != null ? '&i=$imdbID' : '&t=$movieName';
-  final yearQuery = year != null ? '&y=$year' : '';
+    String movieName, String year, String imdbID) async {
+  final queryType = imdbID.isNotEmpty ? '&i=$imdbID' : '&t=$movieName';
+  final yearQuery = year.isNotEmpty ? '&y=$year' : '';
+
   try {
     final response = await http.get(
       Uri.parse('https://omdbapi.com/?$queryType$yearQuery&apikey=e56c123e'),
@@ -50,7 +50,6 @@ Future<Movie> fetchMovieData(
 
     return Movie.fromJson(movieInfo);
   } on Exception catch (e) {
-    print('Exception details:\n $e');
     throw FormatException(e.toString());
   }
 }
@@ -62,28 +61,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         title: 'Movie App',
-        theme: ThemeData(
-            inputDecorationTheme: const InputDecorationTheme(
-              border: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Color.fromARGB(255, 252, 251, 249)),
-              ),
-              labelStyle:
-                  TextStyle(color: Color.fromRGBO(179, 179, 189, 0.678)),
-              fillColor: Color.fromARGB(0, 152, 92, 111),
-              focusedBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Color.fromARGB(255, 236, 226, 213)),
-              ),
-            ),
-            textTheme: ThemeData.light().textTheme.apply(
-                  bodyColor: Colors.white,
-                  displayColor: Colors.white,
-                )),
         home: Scaffold(
             appBar: AppBar(title: const Text('Movie Database')),
             backgroundColor: const Color.fromARGB(255, 0, 7, 10),
-            body: const MovieUI()));
+            body: const SingleChildScrollView(
+              child: MovieUI(),
+            )));
   }
 }
 
@@ -102,9 +85,6 @@ class MovieUIState extends State<MovieUI> {
   final _searchController = TextEditingController();
   final _yearController = TextEditingController();
   final _imdbIDController = TextEditingController();
-  String errorMessage = '';
-
-  String? movieName, imdbID, year;
 
   @override
   void initState() {
@@ -122,18 +102,10 @@ class MovieUIState extends State<MovieUI> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      movieName = _searchController.text;
-
-      if (_yearController.text.trim().isNotEmpty) {
-        year = _yearController.text;
-      }
-      if (_imdbIDController.text.trim().isNotEmpty) {
-        imdbID = _imdbIDController.text;
-      }
-
       setState(() {
-        movieObj = fetchMovieData(movieName!, year, imdbID);
-        print(movieObj);
+        movieObj = null; // Clear previous result
+        movieObj = fetchMovieData(_searchController.text, _yearController.text,
+            _imdbIDController.text);
       });
 
       _formKey.currentState?.reset();
@@ -147,14 +119,15 @@ class MovieUIState extends State<MovieUI> {
     return Container(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   TextFormField(
+                    style: const TextStyle(
+                        color: Color.fromARGB(255, 254, 254, 255)),
                     controller: _searchController,
                     decoration: const InputDecoration(
                       labelText: 'Search Movie ',
@@ -173,6 +146,8 @@ class MovieUIState extends State<MovieUI> {
                       Expanded(
                         child: TextFormField(
                           controller: _yearController,
+                          style: const TextStyle(
+                              color: Color.fromARGB(255, 254, 254, 255)),
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
@@ -187,6 +162,8 @@ class MovieUIState extends State<MovieUI> {
                       Expanded(
                         child: TextFormField(
                           controller: _imdbIDController,
+                          style: const TextStyle(
+                              color: Color.fromARGB(255, 254, 254, 255)),
                           inputFormatters: [
                             LengthLimitingTextInputFormatter(9)
                           ],
@@ -204,66 +181,159 @@ class MovieUIState extends State<MovieUI> {
                     },
                     child: const Text('Search'),
                   ),
-                  Text(errorMessage)
                 ],
               ),
             ),
+            const SizedBox(height: 50.0),
             FutureBuilder(
                 future: movieObj,
                 builder: (context, snapshot) {
                   switch (snapshot.connectionState) {
                     case ConnectionState.waiting:
-                      return Text("WAITING");
+                      return const CircularProgressIndicator();
                     default:
                       if (snapshot.hasError) {
-                        return Text("ERROR");
+                        return Text(
+                          "ERROR ${snapshot.error}",
+                          style: TextStyle(
+                              color: Color.fromARGB(255, 254, 254, 255)),
+                        );
                       } else if (snapshot.hasData) {
                         final M = snapshot.data! as Movie;
+                        Map<String, dynamic> movieData = M.toJson();
 
-                        return Card(
-                            child: Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(13),
-                                  bottom: Radius.circular(13)),
-                              child: Image.network(
-                                M.poster,
-                                //fit: BoxFit.cover,
-                                width: 100.0,
+                        return Container(
+                          padding: const EdgeInsets.all(19.0),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: const Color.fromARGB(221, 85, 85, 100),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Center(
+                                  child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(13),
+                                    bottom: Radius.circular(13)),
+                                child: Image.network(
+                                  M.poster ?? "",
+                                  errorBuilder: (context, error, StackTrace) {
+                                    return const Icon(
+                                      Icons.broken_image,
+                                      size: 80.0,
+                                    );
+                                  },
+                                  width: 150.0,
+                                ),
+                              )),
+                              const SizedBox(height: 13.0),
+                              Center(
+                                  child: Text(
+                                M.title ?? "N/A",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 254, 254, 255),
+                                    fontSize: 20),
+                              )),
+                              const SizedBox(height: 13.0),
+                              Text(
+                                M.plot ?? "N/A",
+                                style: const TextStyle(
+                                    color: Color.fromARGB(255, 254, 254, 255),
+                                    fontSize: 15),
                               ),
-                            ),
-                            ListTile(
-                              title: Text("${M.title}"),
-                              subtitle: Text("${M.plot}"),
-                            ),
-                          ],
-                        ));
+                              const SizedBox(height: 25.0),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => MovieData(
+                                                  movieInfo: movieData,
+                                                )),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Click to see more",
+                                      style: TextStyle(
+                                          color: Color.fromARGB(
+                                              219, 253, 254, 255),
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.navigate_next,
+                                    color: Color.fromARGB(255, 254, 254, 255),
+                                  )
+                                ],
+                              )
+                            ],
+                          ),
+                        );
                       } else {
-                        return Text("NO DATA YET");
+                        return const Text("NO DATA YET");
                       }
                   }
-                  // if (snapshot.hasError) {
-                  //   return const Text(
-                  //     "SOME ERROR OCCURED",
-                  //     style:
-                  //         TextStyle(color: Color.fromARGB(255, 238, 238, 238)),
-                  //   );
-                  // } else if (snapshot.hasData) {
-                  //   return const Text(
-                  //     "DATA RECEIVED",
-                  //     style:
-                  //         TextStyle(color: Color.fromARGB(255, 238, 238, 238)),
-                  //   );
-                  // } else {
-                  //   return const Text(
-                  //     "WAITING",
-                  //     style:
-                  //         TextStyle(color: Color.fromARGB(255, 246, 246, 250)),
-                  //   );
-                  // }
                 })
           ],
+        ));
+  }
+}
+
+class MovieData extends StatelessWidget {
+  final Map<String, dynamic> movieInfo;
+  //final List<int> colorCodes = <int>[600, 500, 100];
+
+  MovieData({super.key, required this.movieInfo});
+
+  List<String> keys = [
+    'imdbID',
+    'Title',
+    'Year',
+    'Plot',
+    'Released',
+    'Genre',
+    'Director',
+    'Writer',
+    'Actors',
+    'Awards',
+    'Metascore',
+    'imdbRating',
+    'BoxOffice'
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: const Text("Movie Database")),
+        body: Container(
+          color: Color.fromARGB(255, 0, 0, 0),
+          padding: EdgeInsets.all(10.0),
+          child: ListView.separated(
+            padding: const EdgeInsets.all(8),
+            itemCount: keys.length,
+            itemBuilder: (BuildContext context, int index) {
+              return Container(
+                color: const Color.fromARGB(221, 85, 85, 100),
+                constraints: const BoxConstraints(minHeight: 50.0),
+                padding: EdgeInsets.all(10.0),
+                child: Center(
+                  child: Text(
+                    '${keys[index]} : ${movieInfo[keys[index]] ?? "N/A"}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 236, 236, 240)),
+                  ),
+                ),
+              );
+            },
+            separatorBuilder: (BuildContext context, int index) =>
+                const Divider(),
+          ),
         ));
   }
 }

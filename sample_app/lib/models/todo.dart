@@ -1,70 +1,70 @@
-/*class Todo {
-  final int? userId;
-  final int? id;
-  final String? title;
-  final bool? completed;
-
-  const Todo({this.id, this.userId, this.title, this.completed});
-
-  static Todo fromJson(Map<String, dynamic> jsonMap) {
-    // parse
-    int? userId;
-    int? id;
-    String? title;
-    bool? completed;
-
-    jsonMap.forEach((key, value) {
-      if (key == "name") {
-        userId = value;
-      }
-      if (key == "id") {
-        id = value;
-      }
-      if (key == "rating") {
-        title = value;
-      }
-      if (key == "imageUrl") {
-        completed = value;
-      }
-    });
-
-    return Todo(userId: userId, id: id, title: title, completed: completed);
-  }
-}
-
-
---- Pratiks version ---
-*/
-
 class Movie {
-  final String imdbID;
-  final String title;
-  final int year;
-  final String poster;
-  final String plot;
+  final String? imdbID;
+  final String? title;
+  final String? year;
+  final String? poster;
+  final String? plot;
+  final String? releaseDate;
+  final String? genre;
+  final String? director;
+  final String? writer;
+  final String? actors;
+  final String? awards;
+  final String? metaScore;
+  final String? imdbRating;
+  final String? boxOffice;
 
-  const Movie({
-    required this.imdbID,
-    required this.title,
-    required this.year,
-    required this.poster,
-    required this.plot,
-  });
+  const Movie(
+      {this.imdbID,
+      this.title,
+      this.year,
+      this.poster,
+      this.plot,
+      this.releaseDate,
+      this.genre,
+      this.director,
+      this.writer,
+      this.actors,
+      this.awards,
+      this.metaScore,
+      this.imdbRating,
+      this.boxOffice});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'imdbID': imdbID,
+      'Title': title,
+      'Year': year,
+      'Poster': poster,
+      'Plot': plot,
+      'Released': releaseDate,
+      'Genre': genre,
+      'Director': director,
+      'Writer': writer,
+      'Actors': actors,
+      'Awards': awards,
+      'Metascore': metaScore,
+      'imdbRating': imdbRating,
+      'BoxOffice': boxOffice,
+    };
+  }
 
   factory Movie.fromJson(Map<String, dynamic> json) {
-    if (json.containsKey("imdbID") &&
-        json.containsKey("Title") &&
-        json.containsKey("Year") &&
-        json.containsKey("Poster") &&
-        json.containsKey("Plot")) {
-      return Movie(
-          imdbID: json["imdbID"] as String,
-          title: json["Title"] as String,
-          year: int.parse(json["Year"]),
-          poster: json["Poster"],
-          plot: json["Plot"]);
-    } else {
-      throw const FormatException("Failed to load Movie");
-    }
+    return Movie(
+      imdbID: json["imdbID"],
+      title: json["Title"],
+      year: json["Year"],
+      poster: json["Poster"],
+      plot: json["Plot"],
+      releaseDate: json["Released"],
+      genre: json["Genre"],
+      director: json["Director"],
+      writer: json["Writer"],
+      actors: json["Actors"],
+      awards: json["Awards"],
+      metaScore: json["Metascore"],
+      imdbRating: json["imdbRating"],
+      boxOffice: json["BoxOffice"],
+    );
   }
 }
